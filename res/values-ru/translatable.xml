@@ -275,4 +275,10 @@
   <string name="progress_unstarted_label">Ещё не начиналось.</string>
   <string name="skipping_folder_label">Ошибка обнаружена и пропущена</string>
   <string name="sdscanner">SD Scanner</string>
+
+  <string name="get_lyrics">Скачать текст</string>
+  <string name="fetching_lyrics">Поиск текста</string>
+  <string name="lyrics_not_found">Текст песни не найден</string>
+  <string name="please_wait">Пожалуйста, подождите…</string>
+  <string name="song_lyrics">Текст песни</string>
 </resources>

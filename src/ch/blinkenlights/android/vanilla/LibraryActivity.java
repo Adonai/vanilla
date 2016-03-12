@@ -57,6 +57,8 @@ import android.widget.SearchView;
 import java.io.File;
 import junit.framework.Assert;
 
+import ch.blinkenlights.android.vanilla.lyrics.LyricsDialog;
+
 /**
  * The library activity where songs to play can be selected from the library.
  */
@@ -592,6 +594,40 @@ public class LibraryActivity
 	private static final int CTX_MENU_MORE_FROM_ALBUM = 8;
 	private static final int CTX_MENU_MORE_FROM_ARTIST = 9;
 	private static final int CTX_MENU_OPEN_EXTERNAL = 10;
+	private static final int CTX_MENU_GET_LYRICS = 11;
+
+	/**
+	 * Builds a media query based off the data stored in the given intent.
+	 *
+	 * @param intent An intent created with
+	 * {@link LibraryAdapter#createData(View)}.
+	 * @param empty If true, use the empty projection (only query id).
+	 * @param all If true query all songs in the adapter; otherwise query based
+	 * on the row selected.
+	 */
+	private QueryTask buildQueryFromIntent(Intent intent, boolean empty, boolean all)
+	{
+		int type = intent.getIntExtra("type", MediaUtils.TYPE_INVALID);
+
+		String[] projection;
+		if (type == MediaUtils.TYPE_PLAYLIST)
+			projection = empty ? Song.EMPTY_PLAYLIST_PROJECTION : Song.FILLED_PLAYLIST_PROJECTION;
+		else
+			projection = empty ? Song.EMPTY_PROJECTION : Song.FILLED_PROJECTION;
+
+		long id = intent.getLongExtra("id", LibraryAdapter.INVALID_ID);
+		QueryTask query;
+		if (type == MediaUtils.TYPE_FILE) {
+			query = MediaUtils.buildFileQuery(intent.getStringExtra("file"), projection);
+		} else if (all || id == LibraryAdapter.HEADER_ID) {
+			query = ((MediaAdapter)mPagerAdapter.mAdapters[type]).buildSongQuery(projection);
+			query.data = id;
+		} else {
+			query = MediaUtils.buildQuery(type, id, projection, null);
+		}
+
+		return query;
+	}
 
 	/**
 	 * Creates a context menu for an adapter row.
@@ -630,6 +666,7 @@ public class LibraryActivity
 				menu.add(0, CTX_MENU_MORE_FROM_ALBUM, 0, R.string.more_from_album).setIntent(rowData);
 			menu.addSubMenu(0, CTX_MENU_ADD_TO_PLAYLIST, 0, R.string.add_to_playlist).getItem().setIntent(rowData);
 			menu.add(0, CTX_MENU_DELETE, 0, R.string.delete).setIntent(rowData);
+			menu.add(0, CTX_MENU_GET_LYRICS, 0, R.string.get_lyrics).setIntent(rowData);
 		}
 	}
 
@@ -731,6 +768,16 @@ public class LibraryActivity
 			break;
 		default:
 			return super.onContextItemSelected(item);
+		case CTX_MENU_GET_LYRICS:
+			long songId = intent.getLongExtra(LibraryAdapter.DATA_ID, LibraryAdapter.INVALID_ID);
+			Song queried = MediaUtils.getSongByTypeId(getContentResolver(), MediaUtils.TYPE_SONG, songId);
+			if(queried == null) {
+				break;
+			}
+
+			LyricsDialog lrd = LyricsDialog.newInstance(queried.artist, queried.title);
+			lrd.show(getFragmentManager(), "LyricsDialog");
+			break;
 		}
 
 		return true;
